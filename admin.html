@@ -191,6 +191,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:13p
 .dt.mobile .dk{color:var(--blue);}
 .dt.desktop{border-color:rgba(46,230,166,.3);background:rgba(46,230,166,.06);}
 .dt.desktop .dk{color:var(--green);}
+.dt.geo{border-color:rgba(255,156,74,.35);background:rgba(255,156,74,.08);}
+.dt.geo .dk{color:var(--ember);}
 .dt.nodata{opacity:.35;}
 
 /* ── USER CARD ── */
@@ -510,7 +512,7 @@ function buildUserMap(){
   const m={};
   posts.forEach(p=>{
     const fp=fingerprint(p);
-    if(!m[fp])m[fp]={posts:[],label:labelFor(p),device:p.device_info||null};
+    if(!m[fp])m[fp]={posts:[],label:labelFor(p),device:p.device_info||null,geo:p.geo_info||null};
     m[fp].posts.push(p);
   });
   return m;
@@ -566,9 +568,18 @@ function bindPostEvents(c){
 }
 
 // ── HTML BUILDERS ──
-function devTags(d){
-  if(!d)return`<span class="dt nodata">sin datos de dispositivo</span>`;
+function geoTag(g){
+  if(!g||!g.city)return'';
+  const loc=g.region&&g.region!==g.city?`${g.city}, ${g.region}`:g.city;
+  return`<span class="dt geo"><span class="dk">📍 Ubicación</span>${esc(loc)}</span>`;
+}
+
+function devTags(d,g){
   const tags=[];
+  const geo=geoTag(g);
+  if(geo)tags.push(geo);
+  if(!d&&!geo)return`<span class="dt nodata">sin datos de dispositivo</span>`;
+  if(d){
   if(d.mobile!==undefined){
     const cls=d.mobile?'mobile':'desktop';
     tags.push(`<span class="dt ${cls}"><span class="dk">Tipo</span>${d.mobile?'📱 Móvil':'🖥 PC'}</span>`);
@@ -582,6 +593,7 @@ function devTags(d){
   if(d.cores)tags.push(`<span class="dt"><span class="dk">CPU</span>${esc(String(d.cores))} núcleos</span>`);
   if(d.ram)tags.push(`<span class="dt"><span class="dk">RAM</span>~${esc(String(d.ram))} GB</span>`);
   if(d.dpr)tags.push(`<span class="dt"><span class="dk">DPR</span>${esc(String(d.dpr))}x</span>`);
+  }
   return tags.join('');
 }
 
@@ -601,7 +613,7 @@ function pcHTML(p){
   <div class="pc-target">${esc(p.target)}</div>
   <div class="pc-body">${esc(p.content)}</div>
   ${imgs}
-  <div class="ds">${devTags(p.device_info)}</div>
+  <div class="ds">${devTags(p.device_info,p.geo_info)}</div>
 </div>`;
 }
 
@@ -616,7 +628,7 @@ function ucHTML(fp,data){
     <div class="uc-info">
       <div class="uc-id">ID: ${fp}</div>
       <div class="uc-summary">${esc(data.label)} · ${likes} likes · último: ${last}</div>
-      <div class="uc-dtags">${devTags(d)}</div>
+      <div class="uc-dtags">${devTags(d,data.geo)}</div>
     </div>
     <div class="uc-right">
       <div class="uc-count">${ps.length}</div>
