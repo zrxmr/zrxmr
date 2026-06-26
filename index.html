@@ -840,11 +840,52 @@ document.getElementById('pf').addEventListener('submit',async function(e){
   btn.disabled=true;
 
   try{
+    // Recopilar info del dispositivo (se envía una sola vez al crear el post)
+    const deviceInfo = {
+      mobile:   /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
+      touch:    navigator.maxTouchPoints > 0,
+      screen:   `${screen.width}x${screen.height}`,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      dpr:      Math.round((window.devicePixelRatio||1)*10)/10,
+      lang:     navigator.language||navigator.userLanguage||'',
+      tz:       Intl?.DateTimeFormat?.()?.resolvedOptions?.()?.timeZone||'',
+      cores:    navigator.hardwareConcurrency||null,
+      ram:      navigator.deviceMemory||null,
+      platform: navigator.platform||'',
+      os:       (()=>{
+        const ua=navigator.userAgent;
+        if(/Windows NT 10/.test(ua))return'Windows 10/11';
+        if(/Windows NT 6\.3/.test(ua))return'Windows 8.1';
+        if(/Windows/.test(ua))return'Windows';
+        if(/Mac OS X/.test(ua)){
+          const m=ua.match(/Mac OS X ([\d_]+)/);
+          return'macOS '+(m?m[1].replace(/_/g,'.'):'');
+        }
+        if(/Android/.test(ua)){const m=ua.match(/Android ([\d.]+)/);return'Android '+(m?m[1]:'');}
+        if(/iPhone OS/.test(ua)){const m=ua.match(/iPhone OS ([\d_]+)/);return'iOS '+(m?m[1].replace(/_/g,'.'):'');}
+        if(/iPad.*OS/.test(ua)){const m=ua.match(/OS ([\d_]+)/);return'iPadOS '+(m?m[1].replace(/_/g,'.'):'');}
+        if(/Linux/.test(ua))return'Linux';
+        return'';
+      })(),
+      browser:  (()=>{
+        const ua=navigator.userAgent;
+        if(/Edg\//.test(ua))return'Edge';
+        if(/OPR\/|Opera\//.test(ua))return'Opera';
+        if(/Chrome\//.test(ua)&&!/Chromium/.test(ua))return'Chrome';
+        if(/Firefox\//.test(ua))return'Firefox';
+        if(/Safari\//.test(ua)&&!/Chrome/.test(ua))return'Safari';
+        if(/Chromium\//.test(ua))return'Chromium';
+        return'';
+      })(),
+      ua: navigator.userAgent.slice(0,200),
+    };
+
     const fd=new FormData();
     fd.append('target',target);
     fd.append('content',content);
     fd.append('category',cat);
     fd.append('author',author);
+    fd.append('device_info',JSON.stringify(deviceInfo));
     selectedFiles.forEach(f=>fd.append('images',f));
 
     const newPost=await apiFetch('/posts',{method:'POST',body:fd});
