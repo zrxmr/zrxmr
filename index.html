@@ -290,12 +290,30 @@ select.fsel{-webkit-appearance:none;cursor:pointer}
         </div>
         <div class="fgg">
           <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Categoria</label>
-          <select id="cat" class="fsel">
-            <option value="">Sin categoria</option>
-            <option>Estafador</option><option>Infiel</option><option>Falso amigo</option>
-            <option>Hipocrita</option><option>Mentiroso</option><option>Narcisista</option>
-            <option>Toxico</option><option>Otro</option>
-          </select>
+          <div class="cdd" id="cdd-cat">
+            <div class="cdd-trigger" onclick="toggleCdd('cdd-cat')">
+              <span class="cdd-val placeholder" id="cdd-cat-val">Sin categoria</span>
+              <svg class="cdd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="cdd-menu">
+              <div class="cdd-opt selected" data-val="" onclick="selectCdd('cdd-cat','','Sin categoria')"><span class="opt-dot"></span>Sin categoria</div>
+              <div class="cdd-sep"></div>
+              <div class="cdd-opt" data-val="Estafador" onclick="selectCdd('cdd-cat','Estafador','Estafador')"><span class="opt-dot"></span>Estafador</div>
+              <div class="cdd-opt" data-val="Infiel" onclick="selectCdd('cdd-cat','Infiel','Infiel')"><span class="opt-dot"></span>Infiel</div>
+              <div class="cdd-opt" data-val="Falso amigo" onclick="selectCdd('cdd-cat','Falso amigo','Falso amigo')"><span class="opt-dot"></span>Falso amigo</div>
+              <div class="cdd-opt" data-val="Hipocrita" onclick="selectCdd('cdd-cat','Hipocrita','Hipocrita')"><span class="opt-dot"></span>Hipocrita</div>
+              <div class="cdd-opt" data-val="Mentiroso" onclick="selectCdd('cdd-cat','Mentiroso','Mentiroso')"><span class="opt-dot"></span>Mentiroso</div>
+              <div class="cdd-opt" data-val="Narcisista" onclick="selectCdd('cdd-cat','Narcisista','Narcisista')"><span class="opt-dot"></span>Narcisista</div>
+              <div class="cdd-opt" data-val="Toxico" onclick="selectCdd('cdd-cat','Toxico','Toxico')"><span class="opt-dot"></span>Toxico</div>
+              <div class="cdd-sep"></div>
+              <div class="cdd-opt" data-val="Otro" onclick="selectCdd('cdd-cat','Otro','Otro')"><span class="opt-dot"></span>✏️ Otro...</div>
+            </div>
+          </div>
+          <input type="hidden" id="cat" value="">
+          <div class="otro-input" id="otro-wrap">
+            <input type="text" id="otro-txt" placeholder="Escribe la categoria (max 50 caracteres)" maxlength="50">
+            <div class="otro-chars" id="otro-chars">0 / 50</div>
+          </div>
         </div>
         <div class="fgg s2">
           <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>El chisme / La evidencia</label>
@@ -336,12 +354,25 @@ select.fsel{-webkit-appearance:none;cursor:pointer}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="si" placeholder="Buscar publicacion...">
     </div>
-    <select class="fsel2" id="fc">
-      <option value="">Todas las categorias</option>
-      <option>Estafador</option><option>Infiel</option><option>Falso amigo</option>
-      <option>Hipocrita</option><option>Mentiroso</option><option>Narcisista</option>
-      <option>Toxico</option><option>Otro</option>
-    </select>
+    <div class="cdd cdd-sm" id="cdd-fc" style="min-width:170px">
+      <div class="cdd-trigger" onclick="toggleCdd('cdd-fc')">
+        <span class="cdd-val placeholder" id="cdd-fc-val">Todas las categorias</span>
+        <svg class="cdd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="cdd-menu">
+        <div class="cdd-opt selected" data-val="" onclick="selectFc('')"><span class="opt-dot"></span>Todas las categorias</div>
+        <div class="cdd-sep"></div>
+        <div class="cdd-opt" data-val="Estafador" onclick="selectFc('Estafador')"><span class="opt-dot"></span>Estafador</div>
+        <div class="cdd-opt" data-val="Infiel" onclick="selectFc('Infiel')"><span class="opt-dot"></span>Infiel</div>
+        <div class="cdd-opt" data-val="Falso amigo" onclick="selectFc('Falso amigo')"><span class="opt-dot"></span>Falso amigo</div>
+        <div class="cdd-opt" data-val="Hipocrita" onclick="selectFc('Hipocrita')"><span class="opt-dot"></span>Hipocrita</div>
+        <div class="cdd-opt" data-val="Mentiroso" onclick="selectFc('Mentiroso')"><span class="opt-dot"></span>Mentiroso</div>
+        <div class="cdd-opt" data-val="Narcisista" onclick="selectFc('Narcisista')"><span class="opt-dot"></span>Narcisista</div>
+        <div class="cdd-opt" data-val="Toxico" onclick="selectFc('Toxico')"><span class="opt-dot"></span>Toxico</div>
+        <div class="cdd-opt" data-val="Otro" onclick="selectFc('Otro')"><span class="opt-dot"></span>Otro</div>
+      </div>
+    </div>
+    <input type="hidden" id="fc" value="">
   </div>
 
   <div class="pbar">
@@ -402,7 +433,7 @@ const PAGE = 50;
 })();
 
 // ── STATE ──
-let posts=[], sort='new', totalPosts=0, offset=0, isLoading=false;
+let posts=[], sort='new', totalPosts=0, offset=0, isLoading=false, filterCat='';
 let likedSet=new Set(JSON.parse(localStorage.getItem('liked')||'[]'));
 let pendingDeleteId=null, tsTimer=null;
 
@@ -551,10 +582,10 @@ function setSort(m){
 }
 
 function getList(){
-  const q=document.getElementById('si').value.toLowerCase(),cat=document.getElementById('fc').value;
+  const q=document.getElementById('si').value.toLowerCase();
   let l=[...posts];
   if(q)l=l.filter(p=>(p.target+p.content+(p.category||'')+(p.author||'')).toLowerCase().includes(q));
-  if(cat)l=l.filter(p=>p.category===cat);
+  if(filterCat)l=l.filter(p=>p.category===filterCat);
   return sort==='top'?l.sort((a,b)=>(b.likes||0)-(a.likes||0)):l;
 }
 
@@ -631,7 +662,9 @@ document.getElementById('pf').addEventListener('submit',async function(e){
   e.preventDefault();
   const target=document.getElementById('tN').value.trim();
   const content=document.getElementById('co').value.trim();
-  const cat=document.getElementById('cat').value;
+  // Si es "Otro", tomar el texto personalizado (ya está en #cat via el listener)
+  const catHidden=document.getElementById('cat').value;
+  const cat=catHidden;
   const authorInput=document.getElementById('au').value.trim();
   const author=authorInput||'Anonimo';
   const img=imgFile.files[0];
@@ -656,6 +689,14 @@ document.getElementById('pf').addEventListener('submit',async function(e){
     this.reset();
     document.getElementById('cc').textContent='0 / 1000';
     document.getElementById('cc').className='cc';
+    // Reset dropdown custom de categoría
+    document.getElementById('cat').value='';
+    document.getElementById('cdd-cat-val').textContent='Sin categoria';
+    document.getElementById('cdd-cat-val').classList.add('placeholder');
+    document.querySelectorAll('#cdd-cat .cdd-opt').forEach(o=>o.classList.toggle('selected',o.dataset.val===''));
+    document.getElementById('otro-wrap').classList.remove('show');
+    document.getElementById('otro-txt').value='';
+    document.getElementById('otro-chars').textContent='0 / 50';
     removeImg();
     showToast('Publicado con exito!','ok');
     hideApiErr();
@@ -726,7 +767,56 @@ document.getElementById('co').addEventListener('input',function(){
 });
 
 document.getElementById('si').addEventListener('input',()=>render(true));
-document.getElementById('fc').addEventListener('change',()=>render(true));
+
+// ── CUSTOM DROPDOWN ──
+function toggleCdd(id){
+  const cdd=document.getElementById(id);
+  const isOpen=cdd.classList.contains('open');
+  document.querySelectorAll('.cdd.open').forEach(c=>c.classList.remove('open'));
+  if(!isOpen)cdd.classList.add('open');
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.cdd'))
+    document.querySelectorAll('.cdd.open').forEach(c=>c.classList.remove('open'));
+});
+
+function selectCdd(cddId,val,label){
+  const cdd=document.getElementById(cddId);
+  document.getElementById('cat').value=val;
+  const valEl=document.getElementById('cdd-cat-val');
+  valEl.textContent=label;
+  valEl.classList.toggle('placeholder',!val);
+  cdd.querySelectorAll('.cdd-opt').forEach(o=>o.classList.toggle('selected',o.dataset.val===val));
+  const otroWrap=document.getElementById('otro-wrap');
+  if(val==='Otro'){
+    otroWrap.classList.add('show');
+    setTimeout(()=>document.getElementById('otro-txt').focus(),50);
+  } else {
+    otroWrap.classList.remove('show');
+    document.getElementById('otro-txt').value='';
+    document.getElementById('otro-chars').textContent='0 / 50';
+  }
+  cdd.classList.remove('open');
+}
+
+document.getElementById('otro-txt').addEventListener('input',function(){
+  const n=this.value.length;
+  document.getElementById('otro-chars').textContent=n+' / 50';
+  // Si hay texto propio lo usamos como categoría; si no, fallback a 'Otro'
+  document.getElementById('cat').value=this.value.trim()||'Otro';
+});
+
+// ── FILTRO TOOLBAR (custom) ──
+function selectFc(val){
+  filterCat=val;
+  const cdd=document.getElementById('cdd-fc');
+  const valEl=document.getElementById('cdd-fc-val');
+  valEl.textContent=val||'Todas las categorias';
+  valEl.classList.toggle('placeholder',!val);
+  cdd.querySelectorAll('.cdd-opt').forEach(o=>o.classList.toggle('selected',o.dataset.val===val));
+  cdd.classList.remove('open');
+  render(true);
+}
 
 // ── INIT ──
 loadPosts(true);
