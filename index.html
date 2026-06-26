@@ -107,10 +107,13 @@ select.fsel{-webkit-appearance:none;cursor:pointer}
 .img-zone-inner{display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none}
 .img-zone-inner svg{color:var(--muted2);width:22px;height:22px}
 .img-zone-inner p{font-size:.78em;color:var(--muted2)}.img-zone-inner span{color:var(--red);font-weight:600}
-.img-prev{margin-top:8px;position:relative;display:inline-block}
-.img-prev img{max-height:150px;max-width:100%;border-radius:var(--rs);border:1px solid var(--border);display:block}
-.img-prev-rm{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--red);border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;line-height:1}
-.post-img{width:100%;max-height:300px;object-fit:cover;border-radius:var(--rs);margin:10px 0 14px;display:block;border:1px solid var(--border)}
+.img-prev-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.img-prev{position:relative;display:inline-block}
+.img-prev img{height:90px;width:90px;object-fit:cover;border-radius:var(--rs);border:1px solid var(--border);display:block}
+.img-prev-rm{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:var(--red);border:none;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;line-height:1}
+.post-imgs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.post-imgs img{flex:1 1 calc(50% - 4px);min-width:100px;max-height:260px;object-fit:cover;border-radius:var(--rs);border:1px solid var(--border);display:block}
+.post-imgs.single img{flex:1 1 100%;max-height:300px}
 .api-err{background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.25);border-radius:var(--rs);padding:10px 14px;font-size:.8em;color:#ff7070;display:none;align-items:center;gap:8px;margin-bottom:16px}
 .api-err.show{display:flex}
 .api-err svg{width:14px;height:14px;flex-shrink:0}
@@ -328,10 +331,10 @@ select.fsel{-webkit-appearance:none;cursor:pointer}
           <label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Imagen (opcional)</label>
           <div id="img-prev-wrap"></div>
           <div class="img-zone" id="img-zone">
-            <input type="file" id="img-file" accept="image/jpeg,image/png,image/gif,image/webp" />
+            <input type="file" id="img-file" accept="image/jpeg,image/png,image/gif,image/webp" multiple />
             <div class="img-zone-inner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <p><span>Adjunta una imagen</span> o arrastra aqui &middot; JPG PNG GIF WEBP &middot; max 5 MB</p>
+              <p><span>Adjunta hasta 5 imagenes</span> o arrastra aqui &middot; JPG PNG GIF WEBP &middot; max 5 MB c/u</p>
             </div>
           </div>
         </div>
@@ -613,7 +616,7 @@ function render(scroll){
         <span class="ptim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span data-ts="${p.created_at}">${ago(p.created_at)}</span></span>
       </div></div>
     <div class="pc2">${esc(p.content).replace(/\n/g,'<br>')}</div>
-    ${p.image_url?`<img class="post-img" src="${p.image_url}" alt="imagen" loading="lazy">`:''}
+    ${p.image_urls&&p.image_urls.length?`<div class="post-imgs${p.image_urls.length===1?' single':''}">${p.image_urls.map(u=>`<img src="${u}" alt="imagen" loading="lazy">`).join('')}</div>`:''}
     <div class="pa">
       <button class="ab ${liked?'liked':''}" id="lb-${p.id}" onclick="likePost(${p.id},this)" ${liked?'disabled':''}>
         <svg viewBox="0 0 24 24" fill="${liked?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -634,30 +637,64 @@ ${myPostsSet.has(p.id)?`
   updateStats();
 }
 
-// ── IMAGE UPLOAD ──
+// ── IMAGE UPLOAD (múltiple, hasta 5) ──
 const imgFile=document.getElementById('img-file');
 const imgZone=document.getElementById('img-zone');
 const imgPrevWrap=document.getElementById('img-prev-wrap');
 
-imgFile.addEventListener('change',()=>showImgPreview(imgFile.files[0]));
+// Acumular archivos seleccionados
+let selectedFiles=[];
+
+function syncFilesToInput(){
+  // Crear un DataTransfer para asignar los archivos al input
+  const dt=new DataTransfer();
+  selectedFiles.forEach(f=>dt.items.add(f));
+  imgFile.files=dt.files;
+}
+
+function addFiles(newFiles){
+  for(const f of newFiles){
+    if(selectedFiles.length>=5){showToast('Máximo 5 imágenes','tr');break;}
+    if(f.size>5*1024*1024){showToast(`"${f.name}" supera 5 MB, saltada`,'tr');continue;}
+    selectedFiles.push(f);
+  }
+  renderPreviews();
+  syncFilesToInput();
+  imgZone.style.display=selectedFiles.length>=5?'none':'';
+}
+
+function removeImg(idx){
+  selectedFiles.splice(idx,1);
+  syncFilesToInput();
+  renderPreviews();
+  imgZone.style.display='';
+}
+
+function renderPreviews(){
+  imgPrevWrap.innerHTML='';
+  selectedFiles.forEach((f,i)=>{
+    const url=URL.createObjectURL(f);
+    const div=document.createElement('div');
+    div.className='img-prev';
+    div.innerHTML=`<img src="${url}" alt="preview"><button class="img-prev-rm" onclick="removeImg(${i})">×</button>`;
+    imgPrevWrap.appendChild(div);
+  });
+}
+
+function resetImgs(){
+  selectedFiles=[];
+  imgFile.value='';
+  imgPrevWrap.innerHTML='';
+  imgZone.style.display='';
+}
+
+imgFile.addEventListener('change',()=>addFiles(Array.from(imgFile.files)));
 imgZone.addEventListener('dragover',e=>{e.preventDefault();imgZone.classList.add('drag');});
 imgZone.addEventListener('dragleave',()=>imgZone.classList.remove('drag'));
 imgZone.addEventListener('drop',e=>{
   e.preventDefault();imgZone.classList.remove('drag');
-  const f=e.dataTransfer.files[0];
-  if(f){imgFile.files=e.dataTransfer.files;showImgPreview(f);}
+  if(e.dataTransfer.files.length)addFiles(Array.from(e.dataTransfer.files));
 });
-
-function showImgPreview(file){
-  if(!file)return;
-  if(file.size>5*1024*1024){showToast('Imagen muy grande (max 5 MB)','tr');return;}
-  const url=URL.createObjectURL(file);
-  imgPrevWrap.innerHTML=`<div class="img-prev"><img src="${url}" alt="preview"><button class="img-prev-rm" onclick="removeImg()">×</button></div>`;
-  imgZone.style.display='none';
-}
-function removeImg(){
-  imgFile.value='';imgPrevWrap.innerHTML='';imgZone.style.display='';
-}
 
 // ── SUBMIT ──
 document.getElementById('pf').addEventListener('submit',async function(e){
@@ -669,8 +706,6 @@ document.getElementById('pf').addEventListener('submit',async function(e){
   const cat=catHidden;
   const authorInput=document.getElementById('au').value.trim();
   const author=authorInput||'Anonimo';
-  const img=imgFile.files[0];
-
   const btn=document.getElementById('submit-btn');
   btn.disabled=true;
 
@@ -680,7 +715,7 @@ document.getElementById('pf').addEventListener('submit',async function(e){
     fd.append('content',content);
     fd.append('category',cat);
     fd.append('author',author);
-    if(img)fd.append('image',img);
+    selectedFiles.forEach(f=>fd.append('images',f));
 
     const newPost=await apiFetch('/posts',{method:'POST',body:fd});
     // Guardar este post como "mio" para mostrar el boton eliminar
@@ -702,7 +737,7 @@ document.getElementById('pf').addEventListener('submit',async function(e){
     document.getElementById('otro-wrap').classList.remove('show');
     document.getElementById('otro-txt').value='';
     document.getElementById('otro-chars').textContent='0 / 50';
-    removeImg();
+    resetImgs();
     showToast('Publicado con exito!','ok');
     hideApiErr();
   }catch(err){
