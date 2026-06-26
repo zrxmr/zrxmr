@@ -187,6 +187,32 @@ select.fsel{-webkit-appearance:none;cursor:pointer}
 .mbtn.danger{background:rgba(255,68,68,.15);border-color:rgba(255,68,68,.3);color:#ff6666}
 .mbtn.danger:hover{background:rgba(255,68,68,.25)}
 
+/* Comentarios */
+.cm-wrap{margin-top:14px;border-top:1px solid var(--border);padding-top:14px}
+.cm-form{display:none;gap:8px;flex-direction:column;margin-bottom:14px;animation:fi .2s ease}
+.cm-form.open{display:flex}
+.cm-form input,.cm-form textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--border-ui);border-radius:var(--rs);color:var(--text);font-family:'Inter',sans-serif;font-size:.85em;padding:9px 12px;transition:.2s}
+.cm-form input:focus,.cm-form textarea:focus{outline:none;border-color:var(--red)}
+.cm-form textarea{resize:vertical;min-height:60px;line-height:1.5}
+.cm-form-row{display:flex;gap:8px;align-items:center}
+.cm-form-row input{max-width:160px}
+.cm-form-btns{display:flex;justify-content:flex-end;gap:8px}
+.cm-send{background:var(--red);border:none;color:#fff;padding:7px 18px;font-size:12.5px;font-weight:600;font-family:'Inter',sans-serif;border-radius:7px;cursor:pointer;transition:.2s}
+.cm-send:hover{background:var(--red-hot)}
+.cm-send:disabled{opacity:.5;cursor:default}
+.cm-cancel{background:transparent;border:1px solid var(--border-ui);color:var(--muted2);padding:7px 16px;font-size:12.5px;font-family:'Inter',sans-serif;border-radius:7px;cursor:pointer;transition:.2s}
+.cm-cancel:hover{border-color:var(--muted2)}
+.cm-list{display:flex;flex-direction:column;gap:10px}
+.cm-item{display:flex;gap:10px;animation:fi .25s ease}
+.cm-ic{width:28px;height:28px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border-ui);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted2)}
+.cm-ic svg{width:13px;height:13px}
+.cm-body{flex:1;min-width:0}
+.cm-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.cm-author{font-size:.82em;font-weight:700;color:var(--text);font-family:'Inter',sans-serif}
+.cm-time{font-size:.72em;color:var(--muted)}
+.cm-text{font-size:.85em;color:rgba(232,232,240,.78);line-height:1.55;margin-top:2px;word-break:break-word}
+.cm-empty{font-size:.8em;color:var(--muted);padding:4px 0 2px}
+
 /* Lightbox de imagen en pantalla completa */
 .post-imgs img{cursor:zoom-in}
 .lb-bg{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.25s}
@@ -479,6 +505,8 @@ let posts=[], sort='new', totalPosts=0, offset=0, isLoading=false, filterCat='';
 let likedSet=new Set(JSON.parse(localStorage.getItem('liked')||'[]'));
 let myPostsSet=new Set(JSON.parse(localStorage.getItem('myPosts')||'[]'));
 let pendingDeleteId=null, tsTimer=null;
+const commentsCache={}; // postId -> array de comentarios ya cargados
+const commentsOpen=new Set(); // postIds con la sección abierta actualmente
 
 // ── HELPERS ──
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -697,13 +725,31 @@ function render(scroll){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Compartir
       </button>
+      <button class="ab" onclick="toggleComments(${p.id})">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Comentar <span class="cnt" id="ccnt-${p.id}">${p.comment_count||0}</span>
+      </button>
 ${myPostsSet.has(p.id)?`
       <button class="ab del" onclick="openModal(${p.id})">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
         Eliminar
       </button>`:''}
+    </div>
+    <div class="cm-wrap" id="cm-wrap-${p.id}" style="display:${commentsOpen.has(p.id)?'block':'none'}">
+      <div class="cm-form${commentsOpen.has(p.id)?' open':''}" id="cm-form-${p.id}">
+        <div class="cm-form-row">
+          <input type="text" id="cm-author-${p.id}" placeholder="Anonimo" maxlength="40">
+        </div>
+        <textarea id="cm-text-${p.id}" placeholder="Escribe un comentario..." maxlength="500"></textarea>
+        <div class="cm-form-btns">
+          <button class="cm-cancel" onclick="toggleComments(${p.id})">Cancelar</button>
+          <button class="cm-send" id="cm-send-${p.id}" onclick="submitComment(${p.id})">Enviar</button>
+        </div>
+      </div>
+      <div class="cm-list" id="cm-list-${p.id}"></div>
     </div>`;
     con.appendChild(el);
+    if(commentsOpen.has(p.id))renderComments(p.id);
   });
   updateStats();
 }
@@ -870,6 +916,90 @@ function sharePost(id){
   const txt=`[QUEMADOS] ${p.target}: ${p.content.substring(0,120)}${p.content.length>120?'...':''}`;
   if(navigator.share)navigator.share({title:'QUEMADOS',text:txt});
   else navigator.clipboard.writeText(txt).then(()=>showToast('Copiado al portapapeles','cp'));
+}
+
+// ── COMENTARIOS ──
+async function toggleComments(postId){
+  const wrap=document.getElementById('cm-wrap-'+postId);
+  if(!wrap)return;
+  const isOpen=commentsOpen.has(postId);
+  if(isOpen){
+    commentsOpen.delete(postId);
+    wrap.style.display='none';
+    document.getElementById('cm-form-'+postId).classList.remove('open');
+    return;
+  }
+  commentsOpen.add(postId);
+  wrap.style.display='block';
+  document.getElementById('cm-form-'+postId).classList.add('open');
+  await loadComments(postId);
+}
+
+async function loadComments(postId){
+  const listEl=document.getElementById('cm-list-'+postId);
+  if(!listEl)return;
+  if(!commentsCache[postId]){
+    listEl.innerHTML='<div class="cm-empty">Cargando comentarios...</div>';
+    try{
+      const r=await fetch(`${API}/posts/${postId}/comments`);
+      commentsCache[postId]=await r.json();
+    }catch(e){
+      listEl.innerHTML='<div class="cm-empty">No se pudieron cargar los comentarios.</div>';
+      return;
+    }
+  }
+  renderComments(postId);
+}
+
+function renderComments(postId){
+  const listEl=document.getElementById('cm-list-'+postId);
+  const list=commentsCache[postId]||[];
+  if(!list.length){
+    listEl.innerHTML='<div class="cm-empty">Aun no hay comentarios. Se el primero.</div>';
+    return;
+  }
+  listEl.innerHTML=list.map(c=>`
+    <div class="cm-item">
+      <div class="cm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="cm-body">
+        <div class="cm-head"><span class="cm-author">${esc(c.author||'Anonimo')}</span><span class="cm-time">${ago(c.created_at)}</span></div>
+        <div class="cm-text">${esc(c.content).replace(/\n/g,'<br>')}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function submitComment(postId){
+  const authorEl=document.getElementById('cm-author-'+postId);
+  const textEl=document.getElementById('cm-text-'+postId);
+  const btn=document.getElementById('cm-send-'+postId);
+  const content=textEl.value.trim();
+  if(!content){showToast('Escribe algo primero','tr');return;}
+  btn.disabled=true;
+  try{
+    const r=await fetch(`${API}/posts/${postId}/comments`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({author:authorEl.value.trim(),content})
+    });
+    if(!r.ok)throw new Error('fail');
+    const newComment=await r.json();
+    if(!commentsCache[postId])commentsCache[postId]=[];
+    commentsCache[postId].push(newComment);
+    renderComments(postId);
+    textEl.value='';
+    authorEl.value='';
+    const p=posts.find(p=>p.id===postId);
+    if(p){
+      p.comment_count=(p.comment_count||0)+1;
+      const cntEl=document.getElementById('ccnt-'+postId);
+      if(cntEl)cntEl.textContent=p.comment_count;
+    }
+    showToast('Comentario publicado','ok');
+  }catch(e){
+    showToast('Error al comentar','tr');
+  }finally{
+    btn.disabled=false;
+  }
 }
 
 // ── CHAR COUNTER ──
