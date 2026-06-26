@@ -435,6 +435,7 @@ const PAGE = 50;
 // ── STATE ──
 let posts=[], sort='new', totalPosts=0, offset=0, isLoading=false, filterCat='';
 let likedSet=new Set(JSON.parse(localStorage.getItem('liked')||'[]'));
+let myPostsSet=new Set(JSON.parse(localStorage.getItem('myPosts')||'[]'));
 let pendingDeleteId=null, tsTimer=null;
 
 // ── HELPERS ──
@@ -622,10 +623,11 @@ function render(scroll){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         Compartir
       </button>
+${myPostsSet.has(p.id)?`
       <button class="ab del" onclick="openModal(${p.id})">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
         Eliminar
-      </button>
+      </button>`:''}
     </div>`;
     con.appendChild(el);
   });
@@ -681,6 +683,9 @@ document.getElementById('pf').addEventListener('submit',async function(e){
     if(img)fd.append('image',img);
 
     const newPost=await apiFetch('/posts',{method:'POST',body:fd});
+    // Guardar este post como "mio" para mostrar el boton eliminar
+    myPostsSet.add(newPost.id);
+    localStorage.setItem('myPosts',JSON.stringify([...myPostsSet]));
     posts.unshift(newPost);
     totalPosts++;
     offset++;
@@ -747,6 +752,8 @@ async function _doDelete(id){
     offset=Math.max(0,offset-1);
     likedSet.delete(id);
     localStorage.setItem('liked',JSON.stringify([...likedSet]));
+    myPostsSet.delete(id);
+    localStorage.setItem('myPosts',JSON.stringify([...myPostsSet]));
     updateStats();render(true);showToast('Eliminado','tr');
   }catch(e){showToast('Error al eliminar','tr');}
 }
