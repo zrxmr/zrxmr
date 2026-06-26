@@ -212,6 +212,18 @@ select.fsel{-webkit-appearance:none;cursor:pointer}
 .cm-time{font-size:.72em;color:var(--muted)}
 .cm-text{font-size:.85em;color:rgba(232,232,240,.78);line-height:1.55;margin-top:2px;word-break:break-word}
 .cm-empty{font-size:.8em;color:var(--muted);padding:4px 0 2px}
+.cm-author-badge{font-size:.68em;font-weight:700;color:var(--red);border:1px solid var(--red-dim);background:var(--red-dim);padding:1px 7px;border-radius:20px;letter-spacing:.02em;text-transform:uppercase}
+.cm-actions{display:flex;gap:14px;margin-top:6px}
+.cm-act{display:flex;align-items:center;gap:4px;background:none;border:none;color:var(--muted);font-size:.76em;font-family:'Inter',sans-serif;cursor:pointer;padding:2px 0;transition:.15s}
+.cm-act svg{width:13px;height:13px}
+.cm-act:hover{color:var(--text)}
+.cm-act.liked{color:var(--red);cursor:default}
+.cm-replies{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding-left:18px;border-left:2px solid var(--border-ui)}
+.cm-reply-form{display:none;flex-direction:column;gap:6px;margin-top:8px}
+.cm-reply-form.open{display:flex}
+.cm-reply-form input,.cm-reply-form textarea{background:var(--bg-card);border:1px solid var(--border-ui);color:var(--text);font-family:'Inter',sans-serif;font-size:.82em;padding:6px 9px;border-radius:7px}
+.cm-reply-form textarea{resize:vertical;min-height:44px}
+.cm-reply-btns{display:flex;justify-content:flex-end;gap:6px}
 
 /* Lightbox de imagen en pantalla completa */
 .post-imgs img{cursor:zoom-in}
@@ -503,6 +515,7 @@ const PAGE = 50;
 // ── STATE ──
 let posts=[], sort='new', totalPosts=0, offset=0, isLoading=false, filterCat='';
 let likedSet=new Set(JSON.parse(localStorage.getItem('liked')||'[]'));
+let likedCommentsSet=new Set(JSON.parse(localStorage.getItem('likedComments')||'[]'));
 let myPostsSet=new Set(JSON.parse(localStorage.getItem('myPosts')||'[]'));
 let pendingDeleteId=null, tsTimer=null;
 const commentsCache={}; // postId -> array de comentarios ya cargados
@@ -838,6 +851,12 @@ document.getElementById('pf').addEventListener('submit',async function(e){
     // Guardar este post como "mio" para mostrar el boton eliminar
     myPostsSet.add(newPost.id);
     localStorage.setItem('myPosts',JSON.stringify([...myPostsSet]));
+    // Guardar el owner_token: permite que el backend marque mis comentarios como "Autor"
+    // sin que nadie más pueda falsificarlo (el token nunca se vuelve a mostrar tras esto).
+    if(newPost.owner_token){
+      localStorage.setItem('postToken:'+newPost.id,newPost.owner_token);
+      delete newPost.owner_token;
+    }
     posts.unshift(newPost);
     totalPosts++;
     offset++;
@@ -950,14 +969,50 @@ function renderComments(postId){
     listEl.innerHTML='<div class="cm-empty">Aun no hay comentarios. Se el primero.</div>';
     return;
   }
-  listEl.innerHTML=list.map(c=>`
-    <div class="cm-item">
+  // Construir árbol: comentarios raíz (sin parent_comment_id) y sus respuestas, en el orden en que llegaron.
+  const byParent={};
+  list.forEach(c=>{
+    const key=c.parent_comment_id||'root';
+    if(!byParent[key])byParent[key]=[];
+    byParent[key].push(c);
+  });
+  const roots=byParent['root']||[];
+
+  function commentHtml(c,isReply){
+    const liked=likedCommentsSet.has(c.id);
+    const replies=byParent[c.id]||[];
+    return `
+    <div class="cm-item" id="cm-item-${c.id}">
       <div class="cm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <div class="cm-body">
-        <div class="cm-head"><span class="cm-author">${esc(c.author||'Anonimo')}</span><span class="cm-time">${ago(c.created_at)}</span></div>
+        <div class="cm-head">
+          <span class="cm-author">${esc(c.author||'Anonimo')}</span>
+          ${c.is_author?'<span class="cm-author-badge">Autor</span>':''}
+          <span class="cm-time">${ago(c.created_at)}</span>
+        </div>
         <div class="cm-text">${esc(c.content).replace(/\n/g,'<br>')}</div>
+        <div class="cm-actions">
+          <button class="cm-act ${liked?'liked':''}" id="cml-${c.id}" onclick="likeComment(${c.id},this)" ${liked?'disabled':''}>
+            <svg viewBox="0 0 24 24" fill="${liked?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span id="cmlc-${c.id}">${c.likes||0}</span>
+          </button>
+          ${!isReply?`<button class="cm-act" onclick="toggleReplyForm(${postId},${c.id})">Responder</button>`:''}
+        </div>
+        ${!isReply?`
+        <div class="cm-reply-form" id="cm-reply-form-${c.id}">
+          <input type="text" id="cm-reply-author-${c.id}" placeholder="Anonimo" maxlength="40">
+          <textarea id="cm-reply-text-${c.id}" placeholder="Escribe una respuesta..." maxlength="500"></textarea>
+          <div class="cm-reply-btns">
+            <button class="cm-cancel" onclick="toggleReplyForm(${postId},${c.id})">Cancelar</button>
+            <button class="cm-send" id="cm-reply-send-${c.id}" onclick="submitReply(${postId},${c.id})">Responder</button>
+          </div>
+        </div>
+        ${replies.length?`<div class="cm-replies">${replies.map(r=>commentHtml(r,true)).join('')}</div>`:''}`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }
+
+  listEl.innerHTML=roots.map(c=>commentHtml(c,false)).join('');
 }
 
 async function submitComment(postId){
@@ -968,10 +1023,11 @@ async function submitComment(postId){
   if(!content){showToast('Escribe algo primero','tr');return;}
   btn.disabled=true;
   try{
+    const ownerToken=localStorage.getItem('postToken:'+postId);
     const r=await fetch(`${API}/posts/${postId}/comments`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({author:authorEl.value.trim(),content})
+      body:JSON.stringify({author:authorEl.value.trim(),content,owner_token:ownerToken||undefined})
     });
     if(!r.ok)throw new Error('fail');
     const newComment=await r.json();
@@ -991,6 +1047,79 @@ async function submitComment(postId){
     showToast('Error al comentar','tr');
   }finally{
     btn.disabled=false;
+  }
+}
+
+// ── RESPUESTAS A COMENTARIOS ──
+function toggleReplyForm(postId,commentId){
+  const form=document.getElementById('cm-reply-form-'+commentId);
+  if(!form)return;
+  form.classList.toggle('open');
+  if(form.classList.contains('open')){
+    document.getElementById('cm-reply-text-'+commentId).focus();
+  }
+}
+
+async function submitReply(postId,parentCommentId){
+  const authorEl=document.getElementById('cm-reply-author-'+parentCommentId);
+  const textEl=document.getElementById('cm-reply-text-'+parentCommentId);
+  const btn=document.getElementById('cm-reply-send-'+parentCommentId);
+  const content=textEl.value.trim();
+  if(!content){showToast('Escribe algo primero','tr');return;}
+  btn.disabled=true;
+  try{
+    const ownerToken=localStorage.getItem('postToken:'+postId);
+    const r=await fetch(`${API}/posts/${postId}/comments`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        author:authorEl.value.trim(),content,
+        owner_token:ownerToken||undefined,
+        parent_comment_id:parentCommentId
+      })
+    });
+    if(!r.ok)throw new Error('fail');
+    const newReply=await r.json();
+    if(!commentsCache[postId])commentsCache[postId]=[];
+    commentsCache[postId].push(newReply);
+    renderComments(postId);
+    textEl.value='';
+    authorEl.value='';
+    const p=posts.find(p=>p.id===postId);
+    if(p){
+      p.comment_count=(p.comment_count||0)+1;
+      const cntEl=document.getElementById('ccnt-'+postId);
+      if(cntEl)cntEl.textContent=p.comment_count;
+    }
+    showToast('Respuesta publicada','ok');
+  }catch(e){
+    showToast('Error al responder','tr');
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+async function likeComment(commentId,btn){
+  if(likedCommentsSet.has(commentId)){showToast('Ya le diste fuego','ok');return;}
+  btn.disabled=true;
+  try{
+    const r=await fetch(`${API}/comments/${commentId}/like`,{method:'POST'});
+    if(!r.ok)throw new Error('fail');
+    const updated=await r.json();
+    likedCommentsSet.add(commentId);
+    localStorage.setItem('likedComments',JSON.stringify([...likedCommentsSet]));
+    btn.classList.add('liked');
+    btn.querySelector('svg').setAttribute('fill','currentColor');
+    const lc=document.getElementById('cmlc-'+commentId);
+    if(lc)lc.textContent=updated.likes;
+    // Mantener en cache para que no se pierda el conteo si se vuelve a renderizar
+    Object.keys(commentsCache).forEach(pid=>{
+      const c=commentsCache[pid].find(c=>c.id===commentId);
+      if(c)c.likes=updated.likes;
+    });
+  }catch(e){
+    btn.disabled=false;
+    showToast('Error al dar fuego','tr');
   }
 }
 
