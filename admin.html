@@ -531,7 +531,7 @@ let pendingDeleteId = null;
 
 const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3000'
-  : '';   // mismo dominio en Railway
+  : 'https://server-upload-production.up.railway.app';
 
 // ── LOGIN ──
 document.getElementById('login-btn').onclick = tryLogin;
