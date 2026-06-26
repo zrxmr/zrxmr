@@ -883,15 +883,7 @@ async function likePost(id,btn){
     showToast('Fuego dado! 🔥','ok');
   }catch(err){
     btn.disabled=false;
-    // 409 = ya dio like desde esta IP en el servidor
-    if(err.message.includes('Ya diste')){
-      likedSet.add(id);
-      localStorage.setItem('liked',JSON.stringify([...likedSet]));
-      btn.classList.add('liked');
-      showToast('Ya le diste fuego','ok');
-    }else{
-      showToast('Error al dar fuego','tr');
-    }
+    showToast('Error al dar fuego','tr');
   }
 }
 
