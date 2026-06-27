@@ -63,7 +63,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:13p
 }
 .ls-ring-svg{position:absolute;inset:0;animation:ringrot 3s linear infinite;}
 @keyframes ringrot{to{transform:rotate(360deg)}}
-.ls-flame{position:relative;z-index:1;font-size:28px;filter:drop-shadow(0 0 18px rgba(255,39,66,.6));}
+.ls-flame{position:relative;z-index:1;width:30px;height:30px;color:#ff2742;filter:drop-shadow(0 0 18px rgba(255,39,66,.6));}
 .ls-title{
   font-family:var(--display);font-size:38px;font-weight:800;letter-spacing:2px;
   color:var(--ink);margin-bottom:6px;
@@ -115,7 +115,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:13p
 }
 .rail-brand{padding:24px 20px 18px;border-bottom:1px solid var(--line);}
 .rail-logo{display:flex;align-items:center;gap:11px;margin-bottom:12px;}
-.rail-flame{font-size:18px;filter:drop-shadow(0 0 10px rgba(255,39,66,.5));}
+.rail-flame{display:inline-flex;width:19px;height:19px;color:#ff2742;filter:drop-shadow(0 0 10px rgba(255,39,66,.5));}
 .rail-word{font-family:var(--display);font-size:17px;font-weight:800;letter-spacing:1.5px;color:var(--ink);}
 .rail-word b{color:var(--red);}
 .rail-meta{font-family:var(--mono);font-size:9px;color:var(--ink3);letter-spacing:3px;text-transform:uppercase;margin-left:29px;}
@@ -505,7 +505,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:13p
         </linearGradient>
       </defs>
     </svg>
-    <div class="ls-flame">🔥</div>
+    <div class="ls-flame"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.3-2-1-3 1 0 3 2 3 6a8 8 0 1 1-16 0c0-5 4-7 5-10 .3 1 .3 2 0 3 1-1 2.3-2 3-3z"/></svg></div>
   </div>
   <div class="ls-title">QUE<b>MA</b>DOS</div>
   <div class="ls-sub">Panel de Control</div>
@@ -522,7 +522,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:13p
   <nav class="rail">
     <div class="rail-brand">
       <div class="rail-logo">
-        <span class="rail-flame">🔥</span>
+        <span class="rail-flame"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.3-2-1-3 1 0 3 2 3 6a8 8 0 1 1-16 0c0-5 4-7 5-10 .3 1 .3 2 0 3 1-1 2.3-2 3-3z"/></svg></span>
         <span class="rail-word">QUE<b>MA</b>DOS</span>
       </div>
       <div class="rail-meta">Admin Panel</div>
